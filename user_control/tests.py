@@ -1,5 +1,6 @@
 from rest_framework.test import APITestCase
 from .views import get_random, get_access_token, get_refresh_token
+from .models import CustomUser
 
 
 
@@ -109,26 +110,26 @@ class TestAuth(APITestCase):
         self.assertTrue(result["refresh"])
 
 
-# class TestUserInfo(APITestCase):
-#     profile_url = "/user/profile"
-#     file_upload_url = "/message/file-upload"
-#     login_url = "/user/login"
+class TestUserInfo(APITestCase):
+    profile_url = "/user/profile"
+    file_upload_url = "/message/file-upload"
+    login_url = "/user/login"
 
-#     def setUp(self):
-#         payload = {
-            # "username": "testuser",
-            # "password": "test123",
-            # "email": "testuser@gmail.com"
-#         }
+    def setUp(self):
+        payload = {
+            "username": "testuser",
+            "password": "test123",
+            "email": "testuser@gmail.com"
+        }
 
-#         self.user = CustomUser.objects._create_user(**payload)
+        self.user = CustomUser.objects._create_user(**payload)
 
-#         # login
-#         response = self.client.post(self.login_url, data=payload)
-#         result = response.json()
+        # login
+        response = self.client.post(self.login_url, data=payload)
+        result = response.json()
 
-#         self.bearer = {
-#             'HTTP_AUTHORIZATION': 'Bearer {}'.format(result['access'])}
+        self.bearer = {
+            'HTTP_AUTHORIZATION': 'Bearer {}'.format(result['access'])}
 
 #     def test_post_user_profile(self):
 
