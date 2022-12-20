@@ -45,6 +45,7 @@ def decodeJWT(bearer):
 
     token = bearer[7:]
     decoded = jwt.decode(token, key=settings.SECRET_KEY)
+    # print("######################", decoded)
     if decoded:
         try:
             return CustomUser.objects.get(id=decoded["user_id"])
@@ -72,7 +73,7 @@ class LoginView(APIView):
         refresh = get_refresh_token()
 
         Jwt.objects.create(
-            user_id=user.id, access=access.decode(), refresh=refresh.decode()
+            user_id=user.id, access=access, refresh=refresh
         )
 
         return Response({"access": access, "refresh": refresh})
@@ -87,7 +88,7 @@ class RegisterView(APIView):
 
         username = serializer.validated_data.pop("username")
 
-        CustomUser.objects.create_user(username=username, **serializer.validated_data)
+        CustomUser.objects._create_user(username=username, **serializer.validated_data)
 
         return Response({"success": "User created."}, status=201)
 
@@ -98,6 +99,7 @@ class RefreshView(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # print("++++++++++++++++++++++++", serializer)
 
         try:
             active_jwt = Jwt.objects.get(

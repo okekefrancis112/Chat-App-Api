@@ -35,17 +35,23 @@ class Authentication(BaseAuthentication):
 
     @staticmethod
     def verify_token(token):
+        # print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", token)
         # decode the token
         try:
             decoded_data = jwt.decode(
-                token, settings.SECRET_KEY, algorithm="HS256")
+                token, settings.SECRET_KEY,
+                algorithm="HS256"
+            )
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", decoded_data)
         except Exception:
             return None
 
         # check if token as exipired
         exp = decoded_data["exp"]
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", exp)
 
         if datetime.now().timestamp() > exp:
             return None
 
+        # print("--------------------------------", decoded_data)
         return decoded_data
