@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from .views import get_random, get_access_token, get_refresh_token
 from .models import CustomUser
+from message_control.tests import create_image, SimpleUploadedFile
 
 
 
@@ -117,9 +118,9 @@ class TestUserInfo(APITestCase):
 
     def setUp(self):
         payload = {
-            "username": "testuser",
+            "username": "testuser2",
             "password": "test123",
-            "email": "testuser@gmail.com"
+            "email": "testuser2@gmail.com"
         }
 
         self.user = CustomUser.objects._create_user(**payload)
@@ -131,57 +132,57 @@ class TestUserInfo(APITestCase):
         self.bearer = {
             'HTTP_AUTHORIZATION': 'Bearer {}'.format(result['access'])}
 
-#     def test_post_user_profile(self):
+    def test_post_user_profile(self):
 
-#         payload = {
-#             "user_id": self.user.id,
-#             "first_name": "Adefemi",
-#             "last_name": "Greate",
-#             "caption": "Being alive is different from living",
-#             "about": "I am a passionation lover of ART, graphics and creation"
-#         }
+        payload = {
+            "user_id": self.user.id,
+            "first_name": "Test",
+            "last_name": "User",
+            "caption": "Being alive is different from living",
+            "about": "I am a passionation lover of ART, graphics and creation"
+        }
 
-#         response = self.client.post(
-#             self.profile_url, data=payload, **self.bearer)
-#         result = response.json()
+        response = self.client.post(
+            self.profile_url, data=payload, **self.bearer
+        )
+        result = response.json()
 
-#         self.assertEqual(response.status_code, 201)
-#         self.assertEqual(result["first_name"], "Adefemi")
-#         self.assertEqual(result["last_name"], "Greate")
-#         self.assertEqual(result["user"]["username"], "adefemigreat")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(result["first_name"], "Test")
+        self.assertEqual(result["last_name"], "User")
+        self.assertEqual(result["user"]["username"], "testuser2")
 
-#     def test_post_user_profile_with_profile_picture(self):
+    def test_post_user_profile_with_profile_picture(self):
 
-#         # upload image
-#         avatar = create_image(None, 'avatar.png')
-#         avatar_file = SimpleUploadedFile('front.png', avatar.getvalue())
-#         data = {
-#             "file_upload": avatar_file
-#         }
+        # upload image
+        avatar = create_image(None, 'avatar.png')
+        avatar_file = SimpleUploadedFile('front.png', avatar.getvalue())
+        data = {
+            "file_upload": avatar_file
+        }
 
-#         # processing
-#         response = self.client.post(
-#             self.file_upload_url, data=data, **self.bearer)
-#         result = response.json()
+        # processing
+        response = self.client.post(
+            self.file_upload_url, data=data, **self.bearer)
+        result = response.json()
 
-#         payload = {
-#             "user_id": self.user.id,
-#             "first_name": "Adefemi",
-#             "last_name": "Greate",
-#             "caption": "Being alive is different from living",
-#             "about": "I am a passionation lover of ART, graphics and creation",
-#             "profile_picture_id": result["id"]
-#         }
+        payload = {
+            "user_id": self.user.id,
+            "first_name": "Test",
+            "last_name": "User",
+            "caption": "Being alive is different from living",
+            "about": "I am a passionation lover of ART, graphics and creation"
+        }
 
-#         response = self.client.post(
-#             self.profile_url, data=payload, **self.bearer)
-#         result = response.json()
+        response = self.client.post(
+            self.profile_url, data=payload, **self.bearer)
+        result = response.json()
 
-#         self.assertEqual(response.status_code, 201)
-#         self.assertEqual(result["first_name"], "Adefemi")
-#         self.assertEqual(result["last_name"], "Greate")
-#         self.assertEqual(result["user"]["username"], "adefemigreat")
-#         self.assertEqual(result["profile_picture"]["id"], 1)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(result["first_name"], "Test")
+        self.assertEqual(result["last_name"], "User")
+        self.assertEqual(result["user"]["username"], "testuser2")
+        self.assertEqual(result["profile_picture"]["id"], 1)
 
 #     def test_update_user_profile(self):
 #         # create profile

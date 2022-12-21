@@ -13,7 +13,7 @@ from .serializers import (
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from .authentication import Authentication
-# from chatapi.custom_methods import IsAuthenticatedCustom
+from chatapi.custom_methods import IsAuthenticatedCustom
 from rest_framework.viewsets import ModelViewSet
 import re
 from django.db.models import Q, Count, Subquery, OuterRef
@@ -44,7 +44,7 @@ def decodeJWT(bearer):
         return None
 
     token = bearer[7:]
-    decoded = jwt.decode(token, key=settings.SECRET_KEY)
+    decoded = jwt.decode(token, key=settings.SECRET_KEY, algorithms="HS256")
     # print("######################", decoded)
     if decoded:
         try:
@@ -112,8 +112,10 @@ class RefreshView(APIView):
         access = get_access_token({"user_id": active_jwt.user.id})
         refresh = get_refresh_token()
 
-        active_jwt.access = access.decode()
-        active_jwt.refresh = refresh.decode()
+        # active_jwt.access = access.decode()
+        active_jwt.access = access
+        # active_jwt.refresh = refresh.decode()
+        active_jwt.refresh = refresh
         active_jwt.save()
 
         return Response({"access": access, "refresh": refresh})
@@ -122,7 +124,7 @@ class RefreshView(APIView):
 class UserProfileView(ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
-    # permission_classes = (IsAuthenticatedCustom, )
+    permission_classes = (IsAuthenticatedCustom, )
 
     def get_queryset(self):
         if self.request.method.lower() != "get":

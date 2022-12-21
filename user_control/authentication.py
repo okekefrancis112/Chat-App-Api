@@ -40,7 +40,7 @@ class Authentication(BaseAuthentication):
         try:
             decoded_data = jwt.decode(
                 token, settings.SECRET_KEY,
-                algorithm="HS256"
+                algorithms="HS256"
             )
             print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", decoded_data)
         except Exception:

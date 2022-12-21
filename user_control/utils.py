@@ -34,7 +34,7 @@ def decodeJWT(bearer):
         except Exception:
             return None
 
-        
+
 
 
 class CustomPagination(PageNumberPagination):
