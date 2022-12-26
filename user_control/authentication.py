@@ -42,13 +42,13 @@ class Authentication(BaseAuthentication):
                 token, settings.SECRET_KEY,
                 algorithms="HS256"
             )
-            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", decoded_data)
+            # print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", decoded_data)
         except Exception:
             return None
 
         # check if token as exipired
         exp = decoded_data["exp"]
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", exp)
+        # print("<<<<<<<<<<<<<<<<<<<<<<<<<<<", exp)
 
         if datetime.now().timestamp() > exp:
             return None

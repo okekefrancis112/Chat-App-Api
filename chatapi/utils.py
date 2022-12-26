@@ -4,7 +4,7 @@ from django.conf import settings
 from user_control.models import CustomUser
 from rest_framework.pagination import PageNumberPagination
 import re
-from django.db.models import Q
+from django.db.models import Q, Count, Subquery, OuterRef
 
 
 def get_access_token(payload, days):
@@ -60,3 +60,9 @@ def get_query(query_string, search_fields):
         else:
             query = query & or_query
         return query
+
+def user_fav_query(user):
+    try:
+        return user.user_favorites.favorite.filter(id=OuterRef("user_id")).values("pk")
+    except Exception:
+        return []

@@ -1,14 +1,13 @@
 import jwt
-from .models import Jwt, CustomUser
-# Favorite
+from .models import Jwt, CustomUser, Favorite
 from datetime import datetime, timedelta
 from django.conf import settings
 import random
 import string
 from rest_framework.views import APIView
 from .serializers import (
-    LoginSerializer, RegisterSerializer, RefreshSerializer, UserProfileSerializer, UserProfile
-    # FavoriteSerializer
+    LoginSerializer, RegisterSerializer, RefreshSerializer, UserProfileSerializer,
+    UserProfile,FavoriteSerializer
 )
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
@@ -17,6 +16,7 @@ from chatapi.custom_methods import IsAuthenticatedCustom
 from rest_framework.viewsets import ModelViewSet
 import re
 from django.db.models import Q, Count, Subquery, OuterRef
+from chatapi.utils import get_query, user_fav_query
 
 
 def get_random(length):
@@ -25,7 +25,7 @@ def get_random(length):
 
 def get_access_token(payload):
     return jwt.encode(
-        {"exp": datetime.now() + timedelta(minutes=5), **payload},
+        {"exp": datetime.now() + timedelta(minutes=1000), **payload},
         settings.SECRET_KEY,
         algorithm="HS256"
     )
@@ -84,6 +84,7 @@ class RegisterView(APIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
+        print("serializer is.................", serializer)
         serializer.is_valid(raise_exception=True)
 
         username = serializer.validated_data.pop("username")
@@ -125,6 +126,7 @@ class UserProfileView(ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = (IsAuthenticatedCustom, )
+    print("is_authenticated............................", permission_classes)
 
     def get_queryset(self):
         if self.request.method.lower() != "get":
@@ -132,20 +134,25 @@ class UserProfileView(ModelViewSet):
 
         data = self.request.query_params.dict()
         data.pop("page", None)
+        print("data is...................................", data)
         keyword = data.pop("keyword", None)
+        print("keyword is...................................", keyword)
 
         if keyword:
             search_fields = (
                 "user__username", "first_name", "last_name", "user__email"
             )
             query = self.get_query(keyword, search_fields)
+            print("query is...................................", query)
             try:
-                return self.queryset.filter(query).filter(**data).exclude(
+                qs = self.queryset.filter(query).filter(**data).exclude(
                     Q(user_id=self.request.user.id) |
-                    Q(user__is_superuser=True)
-                ).annotate(
+                    Q(user__is_superuser=True)).annotate(
                     fav_count=Count(self.user_fav_query(self.request.user))
                 ).order_by("-fav_count")
+
+                print("The query set is...................................", qs)
+                return qs
             except Exception as e:
                 raise Exception(e)
 
@@ -155,6 +162,7 @@ class UserProfileView(ModelViewSet):
         ).annotate(
             fav_count=Count(self.user_fav_query(self.request.user))
         ).order_by("-fav_count")
+        print("keyword is...................................", result)
         return result
 
     @staticmethod
@@ -188,69 +196,69 @@ class UserProfileView(ModelViewSet):
         return [normspace(' ', (t[0] or t[1]).strip()) for t in findterms(query_string)]
 
 
-# class MeView(APIView):
-#     permission_classes = (IsAuthenticatedCustom, )
-#     serializer_class = UserProfileSerializer
+class MeView(APIView):
+    permission_classes = (IsAuthenticatedCustom, )
+    serializer_class = UserProfileSerializer
 
-#     def get(self, request):
-#         data = {}
-#         try:
-#             data = self.serializer_class(request.user.user_profile).data
-#         except Exception:
-#             data = {
-#                 "user": {
-#                     "id": request.user.id
-#                 }
-#             }
-#         return Response(data, status=200)
-
-
-# class LogoutView(APIView):
-#     permission_classes = (IsAuthenticatedCustom, )
-
-#     def get(self, request):
-#         user_id = request.user.id
-
-#         Jwt.objects.filter(user_id=user_id).delete()
-
-#         return Response("logged out successfully", status=200)
+    def get(self, request):
+        data = {}
+        try:
+            data = self.serializer_class(request.user.user_profile).data
+        except Exception:
+            data = {
+                "user": {
+                    "id": request.user.id
+                }
+            }
+        return Response(data, status=200)
 
 
-# class UpdateFavoriteView(APIView):
-#     permission_classes = (IsAuthenticatedCustom,)
-#     serializer_class = FavoriteSerializer
+class LogoutView(APIView):
+    permission_classes = (IsAuthenticatedCustom, )
 
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.serializer_class(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         try:
-#             favorite_user = CustomUser.objects.get(id=serializer.validated_data["favorite_id"])
-#         except Exception:
-#             raise Exception("Favorite user does not exist")
+    def get(self, request):
+        user_id = request.user.id
 
-#         try:
-#             fav = request.user.user_favorites
-#         except Exception:
-#             fav = Favorite.objects.create(user_id=request.user.id)
+        Jwt.objects.filter(user_id=user_id).delete()
 
-#         favorite = fav.favorite.filter(id=favorite_user.id)
-#         if favorite:
-#             fav.favorite.remove(favorite_user)
-#             return Response("removed")
-
-#         fav.favorite.add(favorite_user)
-#         return Response("added")
+        return Response("logged out successfully", status=200)
 
 
-# class CheckIsFavoriteView(APIView):
-#     permission_classes = (IsAuthenticatedCustom,)
+class UpdateFavoriteView(APIView):
+    permission_classes = (IsAuthenticatedCustom,)
+    serializer_class = FavoriteSerializer
 
-#     def get(self, request, *args, **kwargs):
-#         favorite_id = kwargs.get("favorite_id", None)
-#         try:
-#             favorite = request.user.user_favorites.favorite.filter(id=favorite_id)
-#             if favorite:
-#                 return Response(True)
-#             return Response(False)
-#         except Exception:
-#             return Response(False)
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            favorite_user = CustomUser.objects.get(id=serializer.validated_data["favorite_id"])
+        except Exception:
+            raise Exception("Favorite user does not exist")
+
+        try:
+            fav = request.user.user_favorites
+        except Exception:
+            fav = Favorite.objects.create(user_id=request.user.id)
+
+        favorite = fav.favorite.filter(id=favorite_user.id)
+        if favorite:
+            fav.favorite.remove(favorite_user)
+            return Response("removed")
+
+        fav.favorite.add(favorite_user)
+        return Response("added")
+
+
+class CheckIsFavoriteView(APIView):
+    permission_classes = (IsAuthenticatedCustom,)
+
+    def get(self, request, *args, **kwargs):
+        favorite_id = kwargs.get("favorite_id", None)
+        try:
+            favorite = request.user.user_favorites.favorite.filter(id=favorite_id)
+            if favorite:
+                return Response(True)
+            return Response(False)
+        except Exception:
+            return Response(False)
